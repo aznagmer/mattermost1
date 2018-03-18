@@ -1,0 +1,22 @@
+sudo: required
+
+services:
+    - docker
+
+before_install:
+    - docker build -t mattermost-prod-db db
+    - docker build -t mattermost-prod-app app
+
+install:
+    - eval $BUILD
+    - sleep 30
+
+env:
+    - BUILD="docker-compose up -d"
+    - BUILD="docker run -d --name db -e POSTGRES_USER=mmuser -e POSTGRES_PASSWORD=mmuser_password -e POSTGRES_DB=mattermost mattermost-prod-db && sleep 5 && docker run -d --link db -p 80:80 --name app mattermost-prod-app"
+
+script:
+    - curl -sSf http://localhost > /dev/null
+
+after_failure:
+    - timeout 3s docker-compose logs app db web
